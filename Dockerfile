@@ -22,11 +22,17 @@ ARG PY_VER=3.10-slim-bookworm
 
 # if BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
 ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
-FROM --platform=${BUILDPLATFORM} node:20-bullseye-slim AS superset-node
+FROM --platform=${BUILDPLATFORM} node:18-bullseye-slim AS superset-node
 
 ARG NPM_BUILD_CMD="build"
 
+# update npm
+RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
+RUN npm install -g npm@10.8.2
+
 # Somehow we need python3 + build-essential on this side of the house to install node-gyp
+# COPY ./debian.sources /etc/apt/sources.list.d/debian.sources
+COPY ./sources.list1 /etc/apt/sources.list
 RUN apt-get update -qq \
     && apt-get install \
         -yqq --no-install-recommends \
@@ -71,6 +77,7 @@ ENV LANG=C.UTF-8 \
     SUPERSET_HOME="/app/superset_home" \
     SUPERSET_PORT=8088
 
+COPY ./sources.list2 /etc/apt/sources.list
 RUN mkdir -p ${PYTHONPATH} superset/static requirements superset-frontend apache_superset.egg-info requirements \
     && useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \
     && apt-get update -qq && apt-get install -yqq --no-install-recommends \
@@ -92,6 +99,7 @@ COPY --chown=superset:superset requirements/base.txt requirements/
 RUN --mount=type=cache,target=/root/.cache/pip \
     apt-get update -qq && apt-get install -yqq --no-install-recommends \
       build-essential \
+    && pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
     && pip install --upgrade setuptools pip \
     && pip install -r requirements/base.txt \
     && apt-get autoremove -yqq --purge build-essential \
@@ -130,6 +138,8 @@ CMD ["/usr/bin/run-server.sh"]
 FROM lean AS dev
 
 USER root
+
+COPY ./sources.list2 /etc/apt/sources.list
 RUN apt-get update -qq \
     && apt-get install -yqq --no-install-recommends \
         libnss3 \
@@ -143,7 +153,11 @@ RUN apt-get update -qq \
         && rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install playwright
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    && pip install playwright
+# 设置代理
+# ENV http_proxy=http://127.0.0.1:12333
+# ENV https_proxy=http://127.0.0.1:12333
 RUN playwright install-deps
 RUN playwright install chromium
 

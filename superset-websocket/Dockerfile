@@ -18,6 +18,7 @@ WORKDIR /home/superset-websocket
 
 COPY . ./
 
+RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
 RUN npm ci && \
   npm run build
 
@@ -31,6 +32,7 @@ COPY --from=build /home/superset-websocket/dist ./dist
 COPY package*.json ./
 
 # Only install production dependencies
+RUN npm config set registry http://mirrors.cloud.tencent.com/npm/
 RUN npm ci --omit=dev
 
 # Don't run as root!

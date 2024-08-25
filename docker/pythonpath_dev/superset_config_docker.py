@@ -33,6 +33,7 @@ LANGUAGES = {
 
 APP_NAME = "Analytia"
 APPLICATION_ROOT = ''
+SUPERSET_LOGO_TOOLTIP="My Custom Tooltip"
 
 # APP_ICON="./superset-frontend/src/assets/images/rocket.png"
 # SUPERSET_LOGO_TARGET_PATH="./superset-frontend/src/assets/images/rocket.png"
